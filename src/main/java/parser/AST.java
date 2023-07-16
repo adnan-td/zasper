@@ -1,13 +1,6 @@
-package tokeniser;
+package parser;
 
 import java.util.ArrayList;
-
-enum NodeType {
-  Program,
-  NumericLiteral,
-  Identifier,
-  BinaryExpression
-}
 
 class Statement {
   NodeType kind;
@@ -26,8 +19,15 @@ class Program extends Statement {
 }
 
 class Expression extends Statement {
+  Expression expression;
+
   public Expression(NodeType kind) {
     super(kind);
+  }
+
+  public Expression(Expression expression) {
+    super(NodeType.ExpressionStatement);
+    this.expression = expression;
   }
 }
 

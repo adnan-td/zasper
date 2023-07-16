@@ -18,7 +18,7 @@ public class Tokeniser {
         tokens.add(newToken(ch, TokenType.OpenParanthesis));
       } else if (ch.equals(")")) {
         tokens.add(newToken(ch, TokenType.CloseParanthesis));
-      } else if (ch.equals("+") || ch.equals("-") || ch.equals("*") || ch.equals("/")) {
+      } else if (ch.equals("+") || ch.equals("-") || ch.equals("*") || ch.equals("/") || ch.equals("/")) {
         tokens.add(newToken(ch, TokenType.BinaryOperator));
       } else if (ch.equals("=")) {
         tokens.add(newToken(ch, TokenType.Equals));
@@ -31,7 +31,7 @@ public class Tokeniser {
             i++;
           }
           tokens.add(newToken(num, TokenType.Number));
-          continue; // Skip the increment at the end of the loop
+          continue;
         } else if (isAlphabetic(ch)) {
           String identifier = ch;
           i++;
@@ -40,7 +40,7 @@ public class Tokeniser {
             i++;
           }
           tokens.add(newToken(identifier, TokenType.Identifier));
-          continue; // Skip the increment at the end of the loop
+          continue;
         } else if (isSkippable(ch)) {
           // Do nothing for skippable characters
         } else {
@@ -51,7 +51,6 @@ public class Tokeniser {
     }
 
     tokens.add(newToken("EndOfFile", TokenType.EOF));
-
     return tokens.toArray(new Token[tokens.size()]);
   }
 
