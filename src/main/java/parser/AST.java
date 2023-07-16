@@ -1,6 +1,6 @@
 package parser;
 
-import java.util.ArrayList;
+import com.google.gson.Gson;
 
 class Statement {
   NodeType kind;
@@ -8,13 +8,10 @@ class Statement {
   public Statement(NodeType kind) {
     this.kind = kind;
   }
-}
 
-class Program extends Statement {
-  ArrayList<Statement> body = new ArrayList<>();
-
-  public Program() {
-    super(NodeType.Program);
+  @Override
+  public String toString() {
+    return new Gson().toJson(this);
   }
 }
 
@@ -25,9 +22,9 @@ class Expression extends Statement {
     super(kind);
   }
 
-  public Expression(Expression expression) {
-    super(NodeType.ExpressionStatement);
-    this.expression = expression;
+  @Override
+  public String toString() {
+    return new Gson().toJson(this);
   }
 }
 
@@ -42,6 +39,11 @@ class BinaryExpression extends Expression {
     this.right = right;
     this.operator = operator;
   }
+
+  @Override
+  public String toString() {
+    return new Gson().toJson(this);
+  }
 }
 
 class Identifier extends Expression {
@@ -51,13 +53,23 @@ class Identifier extends Expression {
     super(NodeType.Identifier);
     this.symbol = symbol;
   }
+
+  @Override
+  public String toString() {
+    return new Gson().toJson(this);
+  }
 }
 
 class NumericLiteral extends Expression {
   double value;
 
   public NumericLiteral(double value) {
-    super(NodeType.Identifier);
+    super(NodeType.NumericLiteral);
     this.value = value;
+  }
+
+  @Override
+  public String toString() {
+    return new Gson().toJson(this);
   }
 }

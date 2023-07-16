@@ -1,5 +1,7 @@
 package com.kasper;
 
+import parser.Parser;
+import parser.Program;
 import tokeniser.*;
 import java.util.Scanner;
 import com.google.gson.Gson;
@@ -14,16 +16,14 @@ public class App {
         while (true) {
             System.out.print(">> ");
             String line = sc.nextLine();
-            if (line.isEmpty() || line == "break") {
+            if (line.isEmpty() || line.equals("break")) {
                 break;
             }
-            Token[] tokens = Tokeniser.tokenise(line);
-            for (Token t : tokens) {
-                String json = gson.toJson(t);
-                System.out.println(json);
-            }
+            Parser parser = new Parser();
+            Program pg = parser.getAST(line);
+            String json = gson.toJson(pg);
+            System.out.println(json);
         }
-
         sc.close();
     }
 }

@@ -15,9 +15,9 @@ public class Tokeniser {
     while (i < src.length) {
       String ch = src[i];
       if (ch.equals("(")) {
-        tokens.add(newToken(ch, TokenType.OpenParanthesis));
+        tokens.add(newToken(ch, TokenType.OpenParenthesis));
       } else if (ch.equals(")")) {
-        tokens.add(newToken(ch, TokenType.CloseParanthesis));
+        tokens.add(newToken(ch, TokenType.CloseParenthesis));
       } else if (ch.equals("+") || ch.equals("-") || ch.equals("*") || ch.equals("/") || ch.equals("/")) {
         tokens.add(newToken(ch, TokenType.BinaryOperator));
       } else if (ch.equals("=")) {
@@ -39,7 +39,11 @@ public class Tokeniser {
             identifier += src[i];
             i++;
           }
-          tokens.add(newToken(identifier, TokenType.Identifier));
+          if (ReservedKeywords.contains(identifier)) {
+            tokens.add(newToken(identifier, ReservedKeywords.get(identifier)));
+          } else {
+            tokens.add(newToken(identifier, TokenType.Identifier));
+          }
           continue;
         } else if (isSkippable(ch)) {
           // Do nothing for skippable characters

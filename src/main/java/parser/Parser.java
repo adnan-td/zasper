@@ -16,68 +16,75 @@ public class Parser {
     Program program = new Program();
     this.tokens = Arrays.asList(Tokeniser.tokenise(source)).iterator();
     remove_and_get_token();
-    while (remove_and_get_token().type != TokenType.EOF) {
+    while (get_cur_token().type != TokenType.EOF) {
       program.body.add(this.parse_statement());
+      remove_and_get_token();
     }
     return program;
   }
 
-  Token get_prev_token() {
-    return prev;
-  }
-
-  Token get_cur_token() {
+  private Token get_cur_token() {
     return cur;
   }
 
-  Token remove_and_get_token() {
+  private Token remove_and_get_token() {
+    if (!tokens.hasNext()) return cur;
     prev = cur;
     cur = tokens.next();
     return prev;
   }
 
-  private Statement parse_statement() {
-    return new Expression(parse_expression());
-  }
-
-  private Expression parse_expression() {
-    return parse_primary_expression();
-  }
-
-  private Expression parse_primary_expression() {
-
-    TokenType type = get_cur_token().type;
-
-    switch (type) {
-      case Number:
-        // Handle Number case
-        break;
-      case Identifier:
-        // Handle Identifier case
-        break;
-      case Equals:
-        // Handle Equals case
-        break;
-      case Let:
-        // Handle Let case
-        break;
-      case OpenParanthesis:
-        // Handle OpenParanthesis case
-        break;
-      case CloseParanthesis:
-        // Handle CloseParanthesis case
-        break;
-      case BinaryOperator:
-        // Handle BinaryOperator case
-        break;
-      case EOF:
-        // Handle EOF case
-        break;
-      default:
-        // Handle unknown TokenType
-        break;
+  private void expect_token(TokenType type, String err) throws Exception {
+    Token prev = remove_and_get_token();
+    if (prev == null || prev.type != type) {
+      throw new Exception("Parser Error: " + err + " " + prev + " - Expecting: " + type);
     }
+  }
 
-    return new BinaryExpression(null, null, null);
+  private Statement parse_statement() throws Exception  {
+    return parse_expression();
+  }
+
+  private Expression parse_expression() throws Exception  {
+    return parse_additive_expression();
+  }
+
+  private Expression parse_additive_expression() throws Exception {
+    Expression left = parse_multiplicative_expression();
+    while(cur.value.equals("+") || cur.value.equals("-")) {
+      String operator = remove_and_get_token().value;
+      Expression right = parse_multiplicative_expression();
+      left = new BinaryExpression(left, right, operator);
+    }
+    return left;
+  }
+
+  private Expression parse_multiplicative_expression() throws Exception {
+    Expression left = parse_primary_expression();
+    while(cur.value.equals("*") || cur.value.equals("/") || cur.value.equals("%")) {
+      String operator = remove_and_get_token().value;
+      Expression right = parse_primary_expression();
+      left = new BinaryExpression(left, right, operator);
+    }
+    return left;
+  }
+
+  private Expression parse_primary_expression() throws Exception {
+    switch (cur.type) {
+      case Number:
+        return new NumericLiteral(Double.parseDouble(remove_and_get_token().value));
+      case Identifier:
+        return new Identifier(remove_and_get_token().value);
+      case EOF:
+        return null;
+      case OpenParenthesis:
+        remove_and_get_token();
+        Expression value = parse_expression();
+        expect_token(TokenType.CloseParenthesis, "Unexpected token found. Expecting closing parenthesis.");
+        return value;
+
+      default:
+        throw new Exception("Unexpected token found during parsing: " + cur.toString());
+    }
   }
 }

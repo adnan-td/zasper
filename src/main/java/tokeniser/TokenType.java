@@ -5,7 +5,7 @@ public enum TokenType {
   Identifier,
   Equals,
   Let,
-  OpenParanthesis, CloseParanthesis,
+  OpenParenthesis, CloseParenthesis,
   BinaryOperator,
   EOF,
 }

@@ -5,5 +5,4 @@ public enum NodeType {
   NumericLiteral,
   Identifier,
   BinaryExpression,
-  ExpressionStatement,
 }
