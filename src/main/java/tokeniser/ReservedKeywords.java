@@ -3,7 +3,7 @@ package tokeniser;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ReservedKeywords {
+public final class ReservedKeywords {
     private static Map<String, TokenType> rk = new HashMap<>();
 
     static {

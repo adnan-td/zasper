@@ -1,20 +1,25 @@
 package parser;
 
 import java.util.Arrays;
-import java.util.Iterator;
+import java.util.ListIterator;
 
 import tokeniser.Token;
 import tokeniser.TokenType;
 import tokeniser.Tokeniser;
 
 public class Parser {
-  Iterator<Token> tokens;
+  ListIterator<Token> tokens;
   Token cur;
   Token prev;
 
   public Program getAST(String source) throws Exception {
     Program program = new Program();
-    this.tokens = Arrays.asList(Tokeniser.tokenise(source)).iterator();
+    this.tokens = Arrays.asList(Tokeniser.tokenise(source)).listIterator();
+    System.out.println("*** Tokens ***");
+    for (Token t: Tokeniser.tokenise(source)) {
+      System.out.println(t);
+    }
+    System.out.println();
     remove_and_get_token();
     while (get_cur_token().type != TokenType.EOF) {
       program.body.add(this.parse_statement());
@@ -37,7 +42,7 @@ public class Parser {
   private void expect_token(TokenType type, String err) throws Exception {
     Token prev = remove_and_get_token();
     if (prev == null || prev.type != type) {
-      throw new Exception("Parser Error: " + err + " " + prev + " - Expecting: " + type);
+      throw new Exception(String.format("Parser Error: %s\n%s - Expecting: %s", err, prev, type));
     }
   }
 
@@ -80,9 +85,10 @@ public class Parser {
       case OpenParenthesis:
         remove_and_get_token();
         Expression value = parse_expression();
-        expect_token(TokenType.CloseParenthesis, "Unexpected token found. Expecting closing parenthesis.");
+        expect_token(TokenType.CloseParenthesis, "Unexpected token found, expecting closing parenthesis");
         return value;
-
+      case CloseParenthesis:
+        return null;
       default:
         throw new Exception("Unexpected token found during parsing: " + cur.toString());
     }
