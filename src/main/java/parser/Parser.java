@@ -7,19 +7,39 @@ import tokeniser.Token;
 import tokeniser.TokenType;
 import tokeniser.Tokeniser;
 
-public class Parser {
-  ListIterator<Token> tokens;
-  Token cur;
-  Token prev;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
-  public Program getAST(String source) throws Exception {
-    Program program = new Program();
-    this.tokens = Arrays.asList(Tokeniser.tokenise(source)).listIterator();
+public class Parser {
+  private final ListIterator<Token> tokens;
+  private Token cur;
+  public final String source;
+  public final Token[] tokenArray;
+  private final static Gson gson = new GsonBuilder().setPrettyPrinting().create();
+
+  public Parser(String source) throws Exception {
+    this.source = source;
+    this.tokenArray = Tokeniser.tokenise(source);
+    this.tokens = Arrays.asList(this.tokenArray).listIterator();
+  }
+
+  public void printTokens() {
     System.out.println("*** Tokens ***");
-    for (Token t: Tokeniser.tokenise(source)) {
+    for (Token t : tokenArray) {
       System.out.println(t);
     }
     System.out.println();
+  }
+
+  public void printAST() throws Exception {
+    Program pg = getAST();
+    String json = gson.toJson(pg);
+    System.out.println("*** AST ***");
+    System.out.println(json);
+  }
+
+  public Program getAST() throws Exception {
+    Program program = new Program();
     remove_and_get_token();
     while (get_cur_token().type != TokenType.EOF) {
       program.body.add(this.parse_statement());
@@ -33,6 +53,7 @@ public class Parser {
   }
 
   private Token remove_and_get_token() {
+    Token prev;
     if (!tokens.hasNext()) return cur;
     prev = cur;
     cur = tokens.next();
@@ -46,17 +67,17 @@ public class Parser {
     }
   }
 
-  private Statement parse_statement() throws Exception  {
+  private Statement parse_statement() throws Exception {
     return parse_expression();
   }
 
-  private Expression parse_expression() throws Exception  {
+  private Expression parse_expression() throws Exception {
     return parse_additive_expression();
   }
 
   private Expression parse_additive_expression() throws Exception {
     Expression left = parse_multiplicative_expression();
-    while(cur.value.equals("+") || cur.value.equals("-")) {
+    while (cur.value.equals("+") || cur.value.equals("-")) {
       String operator = remove_and_get_token().value;
       Expression right = parse_multiplicative_expression();
       left = new BinaryExpression(left, right, operator);
@@ -66,7 +87,7 @@ public class Parser {
 
   private Expression parse_multiplicative_expression() throws Exception {
     Expression left = parse_primary_expression();
-    while(cur.value.equals("*") || cur.value.equals("/") || cur.value.equals("%")) {
+    while (cur.value.equals("*") || cur.value.equals("/") || cur.value.equals("%")) {
       String operator = remove_and_get_token().value;
       Expression right = parse_primary_expression();
       left = new BinaryExpression(left, right, operator);

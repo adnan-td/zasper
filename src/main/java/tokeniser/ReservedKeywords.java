@@ -4,17 +4,17 @@ import java.util.HashMap;
 import java.util.Map;
 
 public final class ReservedKeywords {
-    private static Map<String, TokenType> rk = new HashMap<>();
+  private static Map<String, TokenType> rk = new HashMap<>();
 
-    static {
-        rk.put("let", TokenType.Let);
-    }
+  static {
+    rk.put("let", TokenType.Let);
+  }
 
-    public static boolean contains(String s) {
-        return rk.containsKey(s);
-    }
+  public static boolean contains(String s) {
+    return rk.containsKey(s);
+  }
 
-    public static TokenType get(String s) {
-        return rk.get(s);
-    }
+  public static TokenType get(String s) {
+    return rk.get(s);
+  }
 }
