@@ -18,31 +18,31 @@ public class Tokeniser {
         tokens.add(newToken(ch, TokenType.OpenParenthesis));
       } else if (ch.equals(")")) {
         tokens.add(newToken(ch, TokenType.CloseParenthesis));
-      } else if (ch.equals("+") || ch.equals("-") || ch.equals("*") || ch.equals("/") || ch.equals("/")) {
+      } else if (ch.equals("+") || ch.equals("-") || ch.equals("*") || ch.equals("/") || ch.equals("%")) {
         tokens.add(newToken(ch, TokenType.BinaryOperator));
       } else if (ch.equals("=")) {
         tokens.add(newToken(ch, TokenType.Equals));
       } else {
         if (isNumeric(ch)) {
-          String num = ch;
+          StringBuilder num = new StringBuilder(ch);
           i++;
           while (i < src.length && isNumeric(src[i])) {
-            num += src[i];
+            num.append(src[i]);
             i++;
           }
-          tokens.add(newToken(num, TokenType.Number));
+          tokens.add(newToken(num.toString(), TokenType.Number));
           continue;
         } else if (isAlphabetic(ch)) {
-          String identifier = ch;
+          StringBuilder identifier = new StringBuilder(ch);
           i++;
           while (i < src.length && isAlphabetic(src[i])) {
-            identifier += src[i];
+            identifier.append(src[i]);
             i++;
           }
-          if (ReservedKeywords.contains(identifier)) {
-            tokens.add(newToken(identifier, ReservedKeywords.get(identifier)));
+          if (ReservedKeywords.contains(identifier.toString())) {
+            tokens.add(newToken(identifier.toString(), ReservedKeywords.get(identifier.toString())));
           } else {
-            tokens.add(newToken(identifier, TokenType.Identifier));
+            tokens.add(newToken(identifier.toString(), TokenType.Identifier));
           }
           continue;
         } else if (isSkippable(ch)) {

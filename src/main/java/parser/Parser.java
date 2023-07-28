@@ -3,12 +3,14 @@ package parser;
 import java.util.Arrays;
 import java.util.ListIterator;
 
+import parser.ast.Statement;
 import tokeniser.Token;
 import tokeniser.TokenType;
 import tokeniser.Tokeniser;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import parser.ast.*;
 
 public class Parser {
   private final ListIterator<Token> tokens;
@@ -98,7 +100,7 @@ public class Parser {
   private Expression parse_primary_expression() throws Exception {
     switch (cur.type) {
       case Number:
-        return new NumericLiteral(Double.parseDouble(remove_and_get_token().value));
+        return new IntegerLiteral(Integer.parseInt(remove_and_get_token().value));
       case Identifier:
         return new Identifier(remove_and_get_token().value);
       case EOF:

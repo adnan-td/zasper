@@ -8,4 +8,6 @@ public enum TokenType {
   OpenParenthesis, CloseParenthesis,
   BinaryOperator,
   EOF,
+  Integer,
+  String,
 }
