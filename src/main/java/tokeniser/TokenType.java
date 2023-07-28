@@ -10,4 +10,6 @@ public enum TokenType {
   EOF,
   Integer,
   String,
+  Double,
+  EOL,
 }

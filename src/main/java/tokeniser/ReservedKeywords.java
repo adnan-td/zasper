@@ -9,7 +9,8 @@ public final class ReservedKeywords {
   static {
     rk.put("let", TokenType.Let);
     rk.put("int", TokenType.Integer);
-    rk.put("str", TokenType.String);
+    rk.put("string", TokenType.String);
+    rk.put("double", TokenType.Double);
   }
 
   public static boolean contains(String s) {

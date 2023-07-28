@@ -46,6 +46,9 @@ public class Tokeniser {
           }
           continue;
         } else if (isSkippable(ch)) {
+          if (ch.equals("\n")) {
+            tokens.add(newToken("EndOfLine", TokenType.EOL));
+          }
           // Do nothing for skippable characters
         } else {
           throw new Exception("Unrecognized character found: " + ch);
@@ -54,6 +57,7 @@ public class Tokeniser {
       i++;
     }
 
+    tokens.add(newToken("EndOfLine", TokenType.EOL));
     tokens.add(newToken("EndOfFile", TokenType.EOF));
     return tokens.toArray(new Token[tokens.size()]);
   }

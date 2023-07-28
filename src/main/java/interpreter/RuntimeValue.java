@@ -10,9 +10,9 @@ public class RuntimeValue<t> {
   }
 }
 
-class NullVal extends RuntimeValue<String> {
+class NullVal extends RuntimeValue<Integer> {
   public NullVal() {
-    super(ValueType.Null, "null");
+    super(ValueType.Null, null);
   }
 }
 

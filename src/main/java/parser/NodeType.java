@@ -1,8 +1,13 @@
 package parser;
 
 public enum NodeType {
-  Program,
+  // Statements
+  ProgramStatement,
+  VariableDeclarationStatement,
+
+  //  Expressions
   NumericLiteral,
   Identifier,
   BinaryExpression,
+  AssignmentExpression,
 }

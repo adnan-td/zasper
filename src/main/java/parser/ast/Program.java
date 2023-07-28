@@ -1,6 +1,6 @@
-package parser;
+package parser.ast;
 
-import parser.ast.Statement;
+import parser.NodeType;
 
 import java.util.ArrayList;
 
@@ -8,7 +8,7 @@ public class Program extends Statement {
   public ArrayList<Statement> body = new ArrayList<>();
 
   public Program() {
-    super(NodeType.Program);
+    super(NodeType.ProgramStatement);
   }
 }
 

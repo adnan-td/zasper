@@ -1,5 +1,6 @@
 package com.kasper;
 
+import gson.Printer;
 import interpreter.Interpreter;
 import parser.Parser;
 
@@ -14,7 +15,7 @@ public class App {
       System.out.println("\nKasper v1.0");
       String source = readFileAsString("src\\main\\java\\com\\kasper\\input.kas");
       Interpreter interpreter = new Interpreter(source);
-      interpreter.print_output();
+      Printer.print(interpreter.evaluate());
     } catch (Exception err) {
       System.out.print(err.toString());
       System.out.println();
