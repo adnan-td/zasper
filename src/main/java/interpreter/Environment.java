@@ -38,8 +38,13 @@ public class Environment {
     if (constants.contains(var_name)) {
       throw new Exception("Cannot assign keywords. Assigning " + var_name);
     }
-    env.variables.put(var_name, value);
-    return value;
+    ValueType leftType = env.variables.get(var_name).type;
+    ValueType rightType = value.type;
+    if (leftType == rightType || rightType == ValueType.Null) {
+      env.variables.put(var_name, value);
+      return value;
+    }
+    throw new Exception(String.format("Cannot assign %s to %s", value.type, env.variables.get(var_name).type));
   }
 
   public RuntimeValue<?> lookup_var(String var_name) throws Exception {

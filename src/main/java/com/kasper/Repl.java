@@ -22,7 +22,7 @@ public class Repl {
             break;
           }
           Parser parser = new Parser(line);
-//          parser.printTokens();
+          parser.printTokens();
           parser.printAST();
           Printer.print(interpreter.interpret(line));
         } catch (Exception er) {

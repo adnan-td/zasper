@@ -6,7 +6,8 @@ public enum NodeType {
   VariableDeclarationStatement,
 
   //  Expressions
-  NumericLiteral,
+  IntegerLiteral,
+  DoubleLiteral,
   Identifier,
   BinaryExpression,
   AssignmentExpression,

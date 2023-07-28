@@ -6,7 +6,7 @@ public class IntegerLiteral extends Expression {
   public int value;
 
   public IntegerLiteral(int value) {
-    super(NodeType.NumericLiteral);
+    super(NodeType.IntegerLiteral);
     this.value = value;
   }
 

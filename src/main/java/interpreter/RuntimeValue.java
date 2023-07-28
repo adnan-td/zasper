@@ -22,6 +22,12 @@ class IntVal extends RuntimeValue<Integer> {
   }
 }
 
+class DoubleVal extends RuntimeValue<Double> {
+  public DoubleVal(double value) {
+    super(ValueType.Double, value);
+  }
+}
+
 class BoolVal extends RuntimeValue<Boolean> {
   public BoolVal(boolean value) {
     super(ValueType.Boolean, value);

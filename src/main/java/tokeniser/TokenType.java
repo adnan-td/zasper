@@ -1,15 +1,18 @@
 package tokeniser;
 
 public enum TokenType {
-  Number,
   Identifier,
   Equals,
   Let,
   OpenParenthesis, CloseParenthesis,
   BinaryOperator,
   EOF,
+  IntegerDeclaration,
+  StringDeclaration,
+  DoubleDeclaration,
+  Double,
   Integer,
   String,
-  Double,
   EOL,
+  Dot,
 }

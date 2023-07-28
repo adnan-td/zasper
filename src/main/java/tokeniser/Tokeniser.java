@@ -30,7 +30,17 @@ public class Tokeniser {
             num.append(src[i]);
             i++;
           }
-          tokens.add(newToken(num.toString(), TokenType.Number));
+          if (i < src.length && src[i].equals(".")) {
+            num.append(src[i]);
+            i++;
+            while (i < src.length && isNumeric(src[i])) {
+              num.append(src[i]);
+              i++;
+            }
+            tokens.add(newToken(num.toString(), TokenType.Double));
+          } else {
+            tokens.add(newToken(num.toString(), TokenType.Integer));
+          }
           continue;
         } else if (isAlphabetic(ch)) {
           StringBuilder identifier = new StringBuilder(ch);

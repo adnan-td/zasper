@@ -79,10 +79,10 @@ public class Parser {
 
   private Statement parse_statement() throws Exception {
     switch (cur.type) {
-      case Integer:
-      case String:
-      case Double:
-        return parse_variable_declaration(cur.type);
+      case IntegerDeclaration:
+      case StringDeclaration:
+      case DoubleDeclaration:
+        return parse_variable_declaration();
       case Let:
       default:
         return parse_expression();
@@ -90,7 +90,17 @@ public class Parser {
   }
 
   private Expression parse_expression() throws Exception {
-    return parse_additive_expression();
+    return parse_assignment_expression();
+  }
+
+  private Expression parse_assignment_expression() throws Exception {
+    Expression left = parse_additive_expression();
+    if (cur.type == TokenType.Equals) {
+      remove_and_get_token();
+      Expression value = parse_additive_expression();
+      return new AssignmentExpression(left, value);
+    }
+    return left;
   }
 
   private Expression parse_additive_expression() throws Exception {
@@ -115,33 +125,34 @@ public class Parser {
 
   private Expression parse_primary_expression() throws Exception {
     switch (cur.type) {
-      case Number:
+      case Integer:
         return new IntegerLiteral(Integer.parseInt(remove_and_get_token().value));
+      case Double:
+        return new DoubleLiteral(Double.parseDouble(remove_and_get_token().value));
       case Identifier:
         return new Identifier(remove_and_get_token().value);
       case EOF:
+      case CloseParenthesis:
         return null;
       case OpenParenthesis:
         remove_and_get_token();
         Expression value = parse_expression();
         expect_token(TokenType.CloseParenthesis, "Unexpected token found, expecting closing parenthesis");
         return value;
-      case CloseParenthesis:
-        return null;
       default:
-        throw new Exception("Unexpected token found during parsing: " + cur.toString());
+        throw new Exception("Unexpected token found during parsing: " + cur);
     }
   }
 
-  private Statement parse_variable_declaration(TokenType type) throws Exception {
-    remove_and_get_token();
+  private Statement parse_variable_declaration() throws Exception {
+    Token type = remove_and_get_token();
     String identifier = expect_token(TokenType.Identifier, "Expected identifier name").value;
     if (cur.type == TokenType.EOL) {
       remove_and_get_token();
-      return new VariableDeclarationStatement(identifier);
+      return new VariableDeclarationStatement(type.type, identifier);
     }
     expect_token(TokenType.Equals, "Extpected '=' assignment operator");
-    Statement declaration = new VariableDeclarationStatement(identifier, parse_expression());
+    Statement declaration = new VariableDeclarationStatement(type.type, identifier, parse_expression());
     expect_token(TokenType.EOL, "Expected end of line");
     return declaration;
   }
