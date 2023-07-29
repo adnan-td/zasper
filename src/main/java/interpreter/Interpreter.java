@@ -14,14 +14,12 @@ public class Interpreter {
     this.source = source;
     this.parser = new Parser(source);
     this.AST = parser.getAST();
-    declare_default_global_var();
   }
 
   public Interpreter() throws Exception {
     this.source = "";
     this.parser = new Parser();
     this.AST = null;
-    declare_default_global_var();
   }
 
   public RuntimeValue<?> interpret(String source) throws Exception {
@@ -46,10 +44,10 @@ public class Interpreter {
       return eval_integer_binary_expression((int) left.value, (int) right.value, astNode.operator);
     } else if (left.type == ValueType.Integer && right.type == ValueType.Double) {
       return eval_double_binary_expression((int) left.value, (double) right.value, astNode.operator);
-    }else if (left.type == ValueType.Double && right.type == ValueType.Integer) {
+    } else if (left.type == ValueType.Double && right.type == ValueType.Integer) {
       return eval_double_binary_expression((double) left.value, (int) right.value, astNode.operator);
-    }else if (left.type == ValueType.Double && right.type == ValueType.Double) {
-      return eval_double_binary_expression((double)left.value, (double) right.value, astNode.operator);
+    } else if (left.type == ValueType.Double && right.type == ValueType.Double) {
+      return eval_double_binary_expression((double) left.value, (double) right.value, astNode.operator);
     }
     return new NullVal();
   }
@@ -72,6 +70,16 @@ public class Interpreter {
       case "%":
         result = left % right;
         break;
+      case ">":
+        return getBoolVal(left > right);
+      case ">=":
+        return getBoolVal(left >= right);
+      case "<":
+        return getBoolVal(left < right);
+      case "<=":
+        return getBoolVal(left <= right);
+      case "==":
+        return getBoolVal(left == right);
     }
     return new IntVal(result);
   }
@@ -94,16 +102,22 @@ public class Interpreter {
       case "%":
         result = left % right;
         break;
+      case ">":
+        return getBoolVal(left > right);
+      case ">=":
+        return getBoolVal(left >= right);
+      case "<":
+        return getBoolVal(left < right);
+      case "<=":
+        return getBoolVal(left <= right);
+      case "==":
+        return getBoolVal(left == right);
     }
     return new DoubleVal(result);
   }
 
-
-  private void declare_default_global_var() throws Exception {
-    globalEnv.declare_constant_var("x", new IntVal(100));
-    globalEnv.declare_constant_var("true", new BoolVal(true));
-    globalEnv.declare_constant_var("false", new BoolVal(false));
-    globalEnv.declare_constant_var("null", new NullVal());
+  private static BoolVal getBoolVal(boolean val) {
+    return new BoolVal(val);
   }
 
   public RuntimeValue<?> evaluate() throws Exception {
@@ -127,6 +141,10 @@ public class Interpreter {
         return evaluate_var_declaration((VariableDeclarationStatement) astNode, env);
       case AssignmentExpression:
         return evaluate_assignment((AssignmentExpression) astNode, env);
+      case WhileStatement:
+        return evaluate_while_statement((WhileStatement) astNode, env);
+      case ForStatement:
+        return evaluate_for_statement((ForStatement) astNode, env);
       default:
         throw new Exception("Support for this AST Node will be added soon");
     }
@@ -143,15 +161,45 @@ public class Interpreter {
     } else {
       value = new RuntimeValue<>(astNode.type, null);
     }
+    if (astNode.lateralDeclaration != null) {
+      evaluate_var_declaration(astNode.lateralDeclaration, env);
+    }
     return env.declare_var(astNode.identifier, value);
   }
 
   private RuntimeValue<?> evaluate_assignment(AssignmentExpression astNode, Environment env) throws Exception {
-    Identifier assignedTo = (Identifier) astNode.assignedTo;
-    if (assignedTo.kind != NodeType.Identifier) {
+    if (astNode.assignedTo.kind != NodeType.Identifier) {
       throw new Exception("Invalid LHS inside assignment expression " + astNode);
     }
-    return env.assign_var(assignedTo.symbol, evaluate_statement(astNode.value, env));
+    Identifier assignedTo = (Identifier) astNode.assignedTo;
+    return env.assign_var(assignedTo.symbol, evaluate_statement(astNode.value, env), astNode.operator);
+  }
+
+  private NullVal evaluate_while_statement(WhileStatement whileStatement, Environment env) throws Exception {
+    BoolVal cond = (BoolVal) evaluate_binary_expression(whileStatement.condition, env);
+    while (cond.value) {
+      execute_block_body(whileStatement.body, env.create_child_environment());
+      cond = (BoolVal) evaluate_binary_expression(whileStatement.condition, env);
+    }
+    return new NullVal();
+  }
+
+  private NullVal evaluate_for_statement(ForStatement forStatement, Environment env) throws Exception {
+    Environment forEnv = env.create_child_environment();
+    evaluate_statement(forStatement.init, forEnv);
+    BoolVal cond = (BoolVal) evaluate_binary_expression(forStatement.test, forEnv);
+    while (cond.value) {
+      execute_block_body(forStatement.body, forEnv.create_child_environment());
+      evaluate_statement(forStatement.update, forEnv);
+      cond = (BoolVal) evaluate_binary_expression(forStatement.test, forEnv);
+    }
+    return new NullVal();
+  }
+
+  private void execute_block_body(BlockBody block, Environment env) throws Exception {
+    for (Statement statement : block.body) {
+      evaluate_statement(statement, env);
+    }
   }
 }
 

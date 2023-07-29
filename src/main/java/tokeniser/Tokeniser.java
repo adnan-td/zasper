@@ -1,16 +1,18 @@
 package tokeniser;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class Tokeniser {
   private static Token newToken(String value, TokenType type) {
     return new Token(value, type);
   }
 
-  public static Token[] tokenise(String source) throws Exception {
+  public static List<Token> tokenise(String source) throws Exception {
     ArrayList<Token> tokens = new ArrayList<Token>();
     String[] src = source.split("");
     int i = 0;
+    int curIndent = 0;
 
     while (i < src.length) {
       String ch = src[i];
@@ -19,9 +21,44 @@ public class Tokeniser {
       } else if (ch.equals(")")) {
         tokens.add(newToken(ch, TokenType.CloseParenthesis));
       } else if (ch.equals("+") || ch.equals("-") || ch.equals("*") || ch.equals("/") || ch.equals("%")) {
-        tokens.add(newToken(ch, TokenType.BinaryOperator));
+        if (i + 1 < src.length && src[i + 1].equals("=")) {
+          tokens.add(newToken(ch + src[i + 1], TokenType.AssignmentOperator));
+          i++;
+        } else {
+          tokens.add(newToken(ch, TokenType.BinaryOperator));
+        }
+      } else if (ch.equals(">") || ch.equals("<")) {
+        if (i + 1 < src.length && src[i + 1].equals("=")) {
+          i++;
+          tokens.add(newToken(ch + src[i], TokenType.BinaryOperator));
+        } else {
+          tokens.add(newToken(ch, TokenType.BinaryOperator));
+        }
       } else if (ch.equals("=")) {
-        tokens.add(newToken(ch, TokenType.Equals));
+        if (i + 1 < src.length && src[i + 1].equals("=")) {
+          i++;
+          tokens.add(newToken(ch + src[i], TokenType.BinaryOperator));
+        } else {
+          tokens.add(newToken(ch, TokenType.Equals));
+        }
+      } else if (ch.equals(",")) {
+        tokens.add(newToken(ch, TokenType.Comma));
+      } else if (ch.equals(":")) {
+        tokens.add(newToken(ch, TokenType.Colon));
+      } else if (ch.equals("\t")) {
+        int newIndent = 1;
+        while (i + 1 < src.length && src[i + 1].equals("\t")) {
+          i++;
+          newIndent++;
+        }
+        if (Math.abs(newIndent - curIndent) > 1) {
+          throw new Exception("Improper Indentation");
+        } else {
+          if (newIndent != curIndent) {
+            tokens.add(newToken("/t", newIndent > curIndent ? TokenType.Indentation : TokenType.Dedentation));
+          }
+        }
+        curIndent = newIndent;
       } else {
         if (isNumeric(ch)) {
           StringBuilder num = new StringBuilder(ch);
@@ -58,6 +95,12 @@ public class Tokeniser {
         } else if (isSkippable(ch)) {
           if (ch.equals("\n")) {
             tokens.add(newToken("EndOfLine", TokenType.EOL));
+            if ((i + 1 < src.length && !src[i + 1].equals("\t")) || i + 1 == src.length) {
+              while (curIndent > 0) {
+                tokens.add(newToken("/t", TokenType.Dedentation));
+                curIndent--;
+              }
+            }
           }
           // Do nothing for skippable characters
         } else {
@@ -69,7 +112,7 @@ public class Tokeniser {
 
     tokens.add(newToken("EndOfLine", TokenType.EOL));
     tokens.add(newToken("EndOfFile", TokenType.EOF));
-    return tokens.toArray(new Token[tokens.size()]);
+    return tokens;
   }
 
   private static boolean isNumeric(String source) {

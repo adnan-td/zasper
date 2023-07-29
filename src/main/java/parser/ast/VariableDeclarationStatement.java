@@ -8,6 +8,7 @@ public class VariableDeclarationStatement extends Statement {
   public String identifier;
   public Expression value;
   public ValueType type;
+  public VariableDeclarationStatement lateralDeclaration = null;
 
   public VariableDeclarationStatement(ValueType type, String identifier, Expression value) {
     super(NodeType.VariableDeclarationStatement);

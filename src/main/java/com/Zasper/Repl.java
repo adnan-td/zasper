@@ -1,6 +1,5 @@
-package com.kasper;
+package com.Zasper;
 
-import gson.Printer;
 import interpreter.Interpreter;
 import parser.Parser;
 
@@ -15,16 +14,15 @@ public class Repl {
       System.out.println("\nRepl v1.0");
       while (true) {
         try {
-
           System.out.print(">> ");
           String line = sc.nextLine();
           if (line.isEmpty() || line.equals("break")) {
             break;
           }
           Parser parser = new Parser(line);
-          parser.printTokens();
+//          parser.printTokens();
           parser.printAST();
-          Printer.print(interpreter.interpret(line));
+//          Printer.print(interpreter.interpret(line));
         } catch (Exception er) {
           System.out.print(er.toString());
           System.out.println();

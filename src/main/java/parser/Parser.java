@@ -20,23 +20,22 @@ public class Parser {
 
   public Parser(String source) throws Exception {
     this.source = source;
-    this.tokensList = Arrays.asList(Tokeniser.tokenise(source));
+    this.tokensList = Tokeniser.tokenise(source);
     this.tokens = this.tokensList.listIterator();
   }
 
   public Parser() throws Exception {
     this.source = "";
-    this.tokensList = Arrays.asList(Tokeniser.tokenise(source));
+    this.tokensList = Tokeniser.tokenise(source);
     this.tokens = this.tokensList.listIterator();
   }
 
   public Program parse(String source) throws Exception {
     this.source += "\n" + source;
-    this.tokensList = Arrays.asList(Tokeniser.tokenise(source));
+    this.tokensList.addAll(Tokeniser.tokenise(source));
     this.tokens = this.tokensList.listIterator();
     return getAST();
   }
-
 
   public void printTokens() {
     for (Token t : tokensList) {
@@ -53,9 +52,10 @@ public class Parser {
     Program program = new Program();
     remove_and_get_token();
     while (cur.type != TokenType.EOF) {
-      program.body.add(this.parse_statement());
       if (cur.type == TokenType.EOL) {
         remove_and_get_token();
+      } else {
+        program.body.add(this.parse_statement());
       }
     }
     return program;
@@ -82,7 +82,11 @@ public class Parser {
       case IntegerDeclaration:
       case StringDeclaration:
       case DoubleDeclaration:
-        return parse_variable_declaration();
+        return parse_variable_declaration(remove_and_get_token());
+      case WhileStatement:
+        return parse_while_statement();
+      case ForStatement:
+        return parse_for_statement();
       case Let:
       default:
         return parse_expression();
@@ -94,11 +98,21 @@ public class Parser {
   }
 
   private Expression parse_assignment_expression() throws Exception {
+    Expression left = parse_comparison_expression();
+    if (cur.type == TokenType.Equals | cur.type == TokenType.AssignmentOperator) {
+      String operator = remove_and_get_token().value;
+      Expression value = parse_comparison_expression();
+      return new AssignmentExpression(left, value, operator);
+    }
+    return left;
+  }
+
+  private Expression parse_comparison_expression() throws Exception {
     Expression left = parse_additive_expression();
-    if (cur.type == TokenType.Equals) {
-      remove_and_get_token();
-      Expression value = parse_additive_expression();
-      return new AssignmentExpression(left, value);
+    while (cur.value.equals(">") || cur.value.equals(">=") || cur.value.equals("<=") || cur.value.equals("<") || cur.value.equals("==")) {
+      String operator = remove_and_get_token().value;
+      Expression right = parse_additive_expression();
+      left = new BinaryExpression(left, right, operator);
     }
     return left;
   }
@@ -144,16 +158,81 @@ public class Parser {
     }
   }
 
-  private Statement parse_variable_declaration() throws Exception {
-    Token type = remove_and_get_token();
+  private Statement parse_variable_declaration(Token type) throws Exception {
     String identifier = expect_token(TokenType.Identifier, "Expected identifier name").value;
     if (cur.type == TokenType.EOL) {
       remove_and_get_token();
       return new VariableDeclarationStatement(type.type, identifier);
+    } else if (cur.type == TokenType.Comma) {
+      remove_and_get_token();
+      VariableDeclarationStatement newVarDec = new VariableDeclarationStatement(type.type, identifier);
+      newVarDec.lateralDeclaration = (VariableDeclarationStatement) parse_variable_declaration(type);
+      return newVarDec;
+    } else {
+      expect_token(TokenType.Equals, "Extpected '=' assignment operator");
+      VariableDeclarationStatement declaration = new VariableDeclarationStatement(type.type, identifier, parse_expression());
+      if (cur.type == TokenType.Comma) {
+        remove_and_get_token();
+        declaration.lateralDeclaration = (VariableDeclarationStatement) parse_variable_declaration(type);
+      } else {
+        expect_token(TokenType.EOL, "Expected end of line");
+      }
+      return declaration;
     }
+  }
+
+  private Statement parse_single_declaration() throws Exception {
+    Token type = remove_and_get_token();
+    String identifier = expect_token(TokenType.Identifier, "Expected identifier name").value;
     expect_token(TokenType.Equals, "Extpected '=' assignment operator");
-    Statement declaration = new VariableDeclarationStatement(type.type, identifier, parse_expression());
-    expect_token(TokenType.EOL, "Expected end of line");
-    return declaration;
+    return new VariableDeclarationStatement(type.type, identifier, parse_expression());
+  }
+
+  private Statement parse_while_statement() throws Exception {
+    remove_and_get_token();
+    BinaryExpression condition = (BinaryExpression) parse_expression();
+    WhileStatement whileStatement = new WhileStatement(condition);
+    expect_token(TokenType.Colon, "Expected ':' in the while statement");
+    expect_token(TokenType.EOL, "Expected block for the while loop");
+    expect_token(TokenType.Indentation, "Expected block for the while loop");
+    while (cur.type != TokenType.Dedentation) {
+      if (cur.type == TokenType.EOL) {
+        remove_and_get_token();
+        continue;
+      }
+      whileStatement.body.body.add(parse_statement());
+    }
+    remove_and_get_token();
+    return whileStatement;
+  }
+
+  private Statement parse_for_statement() throws Exception {
+    remove_and_get_token();
+    Statement init;
+    if (cur.type == TokenType.Identifier) {
+      init = parse_assignment_expression();
+    } else {
+      init = parse_single_declaration();
+    }
+    if (!(init instanceof VariableDeclarationStatement || init instanceof AssignmentExpression)) {
+      throw new Exception("Invalid variable declaration or initialisation");
+    }
+    expect_token(TokenType.Comma, "Expected ',' after variable declaration in the for statement");
+    BinaryExpression test = (BinaryExpression) parse_expression();
+    expect_token(TokenType.Comma, "Expected ',' after condition in the for statement");
+    Statement update = parse_statement();
+    expect_token(TokenType.Colon, "Expected ':' in the for statement");
+    expect_token(TokenType.EOL, "Expected block for the for statement");
+    expect_token(TokenType.Indentation, "Expected block for the for statement");
+    ForStatement forStatement = new ForStatement(init, test, update);
+    while (cur.type != TokenType.Dedentation) {
+      if (cur.type == TokenType.EOL) {
+        remove_and_get_token();
+        continue;
+      }
+      forStatement.body.body.add(parse_statement());
+    }
+    remove_and_get_token();
+    return forStatement;
   }
 }

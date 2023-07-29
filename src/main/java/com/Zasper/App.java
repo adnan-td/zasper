@@ -1,4 +1,4 @@
-package com.kasper;
+package com.Zasper;
 
 import gson.Printer;
 import interpreter.Interpreter;
@@ -12,12 +12,17 @@ import java.io.IOException;
 public class App {
   public static void main(String[] args) {
     try {
-      System.out.println("\nKasper v1.0");
-      String source = readFileAsString("src\\main\\java\\com\\kasper\\input.kas");
+      System.out.println("\nZasper v1.0");
+      String source = readFileAsString("src\\main\\java\\com\\Zasper\\input.kas");
+      Parser parser = new Parser(source);
+//      parser.printTokens();
+      parser.printAST();
       Interpreter interpreter = new Interpreter(source);
       Printer.print(interpreter.evaluate());
     } catch (Exception err) {
       System.out.print(err.toString());
+      System.out.println();
+      err.printStackTrace();
       System.out.println();
     }
   }

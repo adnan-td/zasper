@@ -11,6 +11,9 @@ public final class ReservedKeywords {
     rk.put("int", TokenType.IntegerDeclaration);
     rk.put("string", TokenType.StringDeclaration);
     rk.put("double", TokenType.DoubleDeclaration);
+    rk.put("boolean", TokenType.BooleanDeclaration);
+    rk.put("while", TokenType.WhileStatement);
+    rk.put("for", TokenType.ForStatement);
   }
 
   public static boolean contains(String s) {

@@ -4,6 +4,9 @@ public enum NodeType {
   // Statements
   ProgramStatement,
   VariableDeclarationStatement,
+  WhileStatement,
+  ForStatement,
+  BlockStatement,
 
   //  Expressions
   IntegerLiteral,
