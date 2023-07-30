@@ -1,6 +1,6 @@
 package parser;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
 
@@ -82,12 +82,16 @@ public class Parser {
       case IntegerDeclaration:
       case StringDeclaration:
       case DoubleDeclaration:
+      case BooleanDeclaration:
         return parse_variable_declaration(remove_and_get_token());
       case WhileStatement:
         return parse_while_statement();
       case ForStatement:
         return parse_for_statement();
-      case Let:
+      case FunctionDeclaration:
+        return parse_function_declaration();
+      case ReturnStatement:
+        throw new Exception("'return' outside of function");
       default:
         return parse_expression();
     }
@@ -128,13 +132,27 @@ public class Parser {
   }
 
   private Expression parse_multiplicative_expression() throws Exception {
-    Expression left = parse_primary_expression();
+    Expression left = parse_call_expression();
     while (cur.value.equals("*") || cur.value.equals("/") || cur.value.equals("%")) {
       String operator = remove_and_get_token().value;
-      Expression right = parse_primary_expression();
+      Expression right = parse_call_expression();
       left = new BinaryExpression(left, right, operator);
     }
     return left;
+  }
+
+  private Expression parse_call_expression() throws Exception {
+    Expression left = parse_primary_expression();
+    if (left != null && left.kind == NodeType.Identifier && cur.type == TokenType.OpenParenthesis) {
+      Identifier identifier = (Identifier) left;
+      CallExpression callExpression = new CallExpression(identifier);
+      for (Expression e : parse_arguments()) {
+        callExpression.add_argument(e);
+      }
+      return callExpression;
+    } else {
+      return left;
+    }
   }
 
   private Expression parse_primary_expression() throws Exception {
@@ -188,6 +206,25 @@ public class Parser {
     return new VariableDeclarationStatement(type.type, identifier, parse_expression());
   }
 
+  private Identifier parse_param_declaration() throws Exception {
+    Token type = remove_and_get_token();
+    String identifier = expect_token(TokenType.Identifier, "Expected identifier name").value;
+    return new Identifier(identifier, type.type);
+  }
+
+  private List<Expression> parse_arguments() throws Exception {
+    expect_token(TokenType.OpenParenthesis, "Expected open paranthesis");
+    List<Expression> expressions = new ArrayList<>();
+    while (cur.type != TokenType.CloseParenthesis) {
+      expressions.add(parse_expression());
+      if (cur.type != TokenType.CloseParenthesis) {
+        expect_token(TokenType.Comma, "Expected comma after argument");
+      }
+    }
+    expect_token(TokenType.CloseParenthesis, "Expected ')' after arguments");
+    return expressions;
+  }
+
   private Statement parse_while_statement() throws Exception {
     remove_and_get_token();
     BinaryExpression condition = (BinaryExpression) parse_expression();
@@ -234,5 +271,53 @@ public class Parser {
     }
     remove_and_get_token();
     return forStatement;
+  }
+
+  private Statement parse_function_declaration() throws Exception {
+    remove_and_get_token();
+    String name = expect_token(TokenType.Identifier, "Expected function name after function declaration").value;
+    FunctionDeclaration functionDeclaration = new FunctionDeclaration(new Identifier(name));
+    expect_token(TokenType.OpenParenthesis, "Expected '(' after function name");
+    while (cur.type != TokenType.CloseParenthesis) {
+      functionDeclaration.add_argument(parse_param_declaration());
+      if (cur.type != TokenType.CloseParenthesis) {
+        expect_token(TokenType.Comma, "Expected ',' after argument declaration");
+      }
+    }
+    expect_token(TokenType.CloseParenthesis, "Expected ')' after function arguments");
+    expect_token(TokenType.ArrowOperator, "Expected '->' to define return type of function");
+    switch (cur.type) {
+      case IntegerDeclaration:
+      case StringDeclaration:
+      case DoubleDeclaration:
+      case BooleanDeclaration:
+        functionDeclaration.set_return_type(remove_and_get_token().type);
+        break;
+      default:
+        throw new Exception("Invalid function return type");
+    }
+    expect_token(TokenType.Colon, "Expected ':'");
+    expect_token(TokenType.EOL, "Expected block for the function");
+    expect_token(TokenType.Indentation, "Expected block for the function");
+    while (cur.type != TokenType.Dedentation) {
+      if (cur.type == TokenType.EOL) {
+        remove_and_get_token();
+        continue;
+      }
+      if (cur.type == TokenType.ReturnStatement) {
+        functionDeclaration.body.body.add(parse_return_statement());
+      } else {
+        functionDeclaration.body.body.add(parse_statement());
+      }
+    }
+    remove_and_get_token();
+    return functionDeclaration;
+  }
+
+  private ReturnStatement parse_return_statement() throws Exception {
+    expect_token(TokenType.ReturnStatement, "Expected return statement");
+    ReturnStatement returnStatement = new ReturnStatement(parse_expression());
+    expect_token(TokenType.EOL, "Unexpected tokens after return expression");
+    return returnStatement;
   }
 }

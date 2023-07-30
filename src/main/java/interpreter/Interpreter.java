@@ -4,6 +4,10 @@ import parser.NodeType;
 import parser.Parser;
 import parser.ast.*;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
 public class Interpreter {
   public String source;
   public Program AST;
@@ -145,6 +149,10 @@ public class Interpreter {
         return evaluate_while_statement((WhileStatement) astNode, env);
       case ForStatement:
         return evaluate_for_statement((ForStatement) astNode, env);
+      case FunctionDeclaration:
+        return evaluate_function_declaration((FunctionDeclaration) astNode, env);
+      case CallExpression:
+        return evaluate_call_expression((CallExpression) astNode, env);
       default:
         throw new Exception("Support for this AST Node will be added soon");
     }
@@ -199,6 +207,40 @@ public class Interpreter {
   private void execute_block_body(BlockBody block, Environment env) throws Exception {
     for (Statement statement : block.body) {
       evaluate_statement(statement, env);
+    }
+  }
+
+  private ReturnStatement execute_block_return(BlockBody block, Environment env) throws Exception {
+    for (Statement st : block.body) {
+      if (st.kind == NodeType.ReturnStatement) {
+        return (ReturnStatement) st;
+      }
+      evaluate_statement(st, env);
+    }
+    return null;
+  }
+
+  private NullVal evaluate_function_declaration(FunctionDeclaration astNode, Environment env) throws Exception {
+    env.declare_function(astNode.id.symbol, new FunctionRuntime(env.create_child_environment(), astNode.body, astNode.parameters, astNode.returnType));
+    return new NullVal();
+  }
+
+  private RuntimeValue<?> evaluate_call_expression(CallExpression callExpression, Environment env) throws Exception {
+    FunctionRuntime function = env.lookup_function(callExpression.caller.symbol);
+    List<RuntimeValue<?>> arguments = new ArrayList<>();
+    for (Expression exp : callExpression.arguments) {
+      arguments.add(evaluate_statement(exp, env));
+    }
+    Environment funcEnv = function.assign_arguments(arguments);
+    ReturnStatement returnStatement = execute_block_return(function.body, funcEnv);
+    if (returnStatement == null) {
+      if (function.returnType == ValueType.Null) return new NullVal();
+      else throw new Exception("Return type did not match the function");
+    } else {
+      RuntimeValue<?> returnValue = evaluate_statement(returnStatement.argument, funcEnv);
+      if (returnValue.type == function.returnType) {
+        return returnValue;
+      } else throw new Exception("Return type did not match the function");
     }
   }
 }

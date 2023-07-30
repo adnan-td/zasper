@@ -13,9 +13,9 @@ public class App {
   public static void main(String[] args) {
     try {
       System.out.println("\nZasper v1.0");
-      String source = readFileAsString("src\\main\\java\\com\\Zasper\\input.kas");
+      String source = readFileAsString("src\\main\\java\\com\\Zasper\\input.zas");
       Parser parser = new Parser(source);
-//      parser.printTokens();
+      parser.printTokens();
       parser.printAST();
       Interpreter interpreter = new Interpreter(source);
       Printer.print(interpreter.evaluate());

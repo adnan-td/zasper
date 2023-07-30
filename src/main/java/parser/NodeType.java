@@ -7,6 +7,8 @@ public enum NodeType {
   WhileStatement,
   ForStatement,
   BlockStatement,
+  FunctionDeclaration,
+  ReturnStatement,
 
   //  Expressions
   IntegerLiteral,
@@ -14,4 +16,5 @@ public enum NodeType {
   Identifier,
   BinaryExpression,
   AssignmentExpression,
+  CallExpression,
 }

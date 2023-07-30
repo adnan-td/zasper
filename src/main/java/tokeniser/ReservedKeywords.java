@@ -12,8 +12,12 @@ public final class ReservedKeywords {
     rk.put("string", TokenType.StringDeclaration);
     rk.put("double", TokenType.DoubleDeclaration);
     rk.put("boolean", TokenType.BooleanDeclaration);
+    rk.put("true", TokenType.Boolean);
+    rk.put("false", TokenType.Boolean);
     rk.put("while", TokenType.WhileStatement);
     rk.put("for", TokenType.ForStatement);
+    rk.put("func", TokenType.FunctionDeclaration);
+    rk.put("return", TokenType.ReturnStatement);
   }
 
   public static boolean contains(String s) {
