@@ -1,13 +1,14 @@
 package interpreter;
 
+import NativeCode.Functions;
 import parser.ast.BlockBody;
 import parser.ast.Identifier;
 
 import java.util.List;
 
 public class RuntimeValue<t> {
-  ValueType type;
-  t value;
+  public ValueType type;
+  public t value;
 
   public RuntimeValue(ValueType type, t value) {
     this.type = type;
@@ -39,21 +40,37 @@ class BoolVal extends RuntimeValue<Boolean> {
   }
 }
 
+class StringVal extends RuntimeValue<String> {
+  public StringVal(String value) {
+    super(ValueType.String, value);
+  }
+}
+
 class FunctionRuntime {
   public Environment env;
   public BlockBody body;
   public List<Identifier> parameters;
   public ValueType returnType;
+  public boolean isNative = false;
+  public String id;
 
   public FunctionRuntime(Environment env, BlockBody body, List<Identifier> parameters, ValueType returnType) throws Exception {
     this.env = env;
     this.body = body;
     this.parameters = parameters;
     this.returnType = returnType;
-    declare_parameters();
   }
 
-  private void declare_parameters() throws Exception {
+  public FunctionRuntime(String id) throws Exception {
+    this.isNative = true;
+    this.id = id;
+  }
+
+  public void execute(List<RuntimeValue<?>> args) throws Exception {
+    Functions.execute(id, args);
+  }
+
+  private void declare_parameters(Environment env) throws Exception {
     for (Identifier identifier : parameters) {
       env.declare_var(identifier.symbol, new RuntimeValue<>(identifier.type, null));
     }
@@ -61,6 +78,7 @@ class FunctionRuntime {
 
   public Environment assign_arguments(List<RuntimeValue<?>> arguments) throws Exception {
     Environment subEnv = env.create_child_environment();
+    declare_parameters(subEnv);
     if (arguments.size() != parameters.size()) {
       throw new Exception(String.format("Expected %d arguments, got %d arguments", parameters.size(), arguments.size()));
     }

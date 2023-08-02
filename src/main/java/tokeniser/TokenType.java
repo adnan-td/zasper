@@ -18,6 +18,7 @@ public enum TokenType {
   Integer,
   String,
   Boolean,
+  Null,
   EOL,
   Dot,
   Comma,
@@ -28,4 +29,10 @@ public enum TokenType {
 
   Indentation,
   Dedentation,
+
+  Break,
+  Continue,
+  IfStatement,
+  ElifStatement,
+  ElseStatement,
 }

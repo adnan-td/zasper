@@ -3,10 +3,10 @@ package parser.ast;
 import parser.NodeType;
 
 public class WhileStatement extends Statement {
-  public BinaryExpression condition;
+  public Expression condition;
   public BlockBody body;
 
-  public WhileStatement(BinaryExpression condition) {
+  public WhileStatement(Expression condition) {
     super(NodeType.WhileStatement);
     this.condition = condition;
     this.body = new BlockBody();

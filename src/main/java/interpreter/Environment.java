@@ -16,7 +16,7 @@ public class Environment {
     this.functions = new HashMap<>();
     this.constants = new HashSet<>();
     if (parent_ENV == null) {
-      declare_default_global_var(this);
+      declare_native_functions();
     }
   }
 
@@ -100,6 +100,10 @@ public class Environment {
         }
         env.variables.put(var_name, value);
         return value;
+      } else if (assignedTo.type == ValueType.Boolean) {
+        if (!operator.equals("=")) throw new Exception(String.format("Cannot perform '%s' on booleans", operator));
+        this.variables.put(var_name, value);
+        return value;
       }
     } else if (value.type == ValueType.Null) {
       RuntimeValue<?> newVal = new RuntimeValue<>(assignedTo.type, null);
@@ -154,10 +158,12 @@ public class Environment {
     return new Environment(this);
   }
 
-  private void declare_default_global_var(Environment env) throws Exception {
-    env.declare_constant_var("x", new IntVal(100));
-    env.declare_constant_var("true", new BoolVal(true));
-    env.declare_constant_var("false", new BoolVal(false));
-    env.declare_constant_var("null", new NullVal());
+  private void declare_native_functions() throws Exception {
+    add_native_function("print");
+  }
+
+  private void add_native_function(String name) throws Exception {
+    constants.add(name);
+    functions.put(name, new FunctionRuntime(name));
   }
 }

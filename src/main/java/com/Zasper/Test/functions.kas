@@ -1,0 +1,11 @@
+func mult(int a, int b) -> int:
+	return a * b
+
+func factorial(int n) -> int:
+	int result = 1
+	for int i = 1, i <= n, i += 1:
+		result = mult(result, i)
+
+	return result
+
+factorial(4)

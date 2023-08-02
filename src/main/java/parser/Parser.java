@@ -91,7 +91,17 @@ public class Parser {
       case FunctionDeclaration:
         return parse_function_declaration();
       case ReturnStatement:
-        throw new Exception("'return' outside of function");
+        return parse_return_statement();
+      case IfStatement:
+        return parse_if_statement();
+      case Break:
+        remove_and_get_token();
+        expect_token(TokenType.EOL, "Unexpected token after break");
+        return new BreakStatement();
+      case Continue:
+        remove_and_get_token();
+        expect_token(TokenType.EOL, "Unexpected token after break");
+        return new ContinueStatement();
       default:
         return parse_expression();
     }
@@ -161,6 +171,13 @@ public class Parser {
         return new IntegerLiteral(Integer.parseInt(remove_and_get_token().value));
       case Double:
         return new DoubleLiteral(Double.parseDouble(remove_and_get_token().value));
+      case Boolean:
+        return new BooleanLiteral(Boolean.parseBoolean((remove_and_get_token().value)));
+      case String:
+        return new StringLiteral(remove_and_get_token().value);
+      case Null:
+        remove_and_get_token();
+        return new NullLiteral();
       case Identifier:
         return new Identifier(remove_and_get_token().value);
       case EOF:
@@ -188,7 +205,16 @@ public class Parser {
       return newVarDec;
     } else {
       expect_token(TokenType.Equals, "Extpected '=' assignment operator");
-      VariableDeclarationStatement declaration = new VariableDeclarationStatement(type.type, identifier, parse_expression());
+      VariableDeclarationStatement declaration;
+      if (type.type == TokenType.BooleanDeclaration) {
+        Expression exp = parse_primary_expression();
+        if (!(exp instanceof BooleanLiteral || exp instanceof NullLiteral)) {
+          throw new Exception("Expected boolean declaration");
+        }
+        declaration = new VariableDeclarationStatement(type.type, identifier, exp);
+      } else {
+        declaration = new VariableDeclarationStatement(type.type, identifier, parse_expression());
+      }
       if (cur.type == TokenType.Comma) {
         remove_and_get_token();
         declaration.lateralDeclaration = (VariableDeclarationStatement) parse_variable_declaration(type);
@@ -225,21 +251,28 @@ public class Parser {
     return expressions;
   }
 
-  private Statement parse_while_statement() throws Exception {
-    remove_and_get_token();
-    BinaryExpression condition = (BinaryExpression) parse_expression();
-    WhileStatement whileStatement = new WhileStatement(condition);
-    expect_token(TokenType.Colon, "Expected ':' in the while statement");
-    expect_token(TokenType.EOL, "Expected block for the while loop");
-    expect_token(TokenType.Indentation, "Expected block for the while loop");
+  private void parse_block(BlockBody body) throws Exception {
+    expect_token(TokenType.Indentation, "Expected block");
     while (cur.type != TokenType.Dedentation) {
       if (cur.type == TokenType.EOL) {
         remove_and_get_token();
         continue;
       }
-      whileStatement.body.body.add(parse_statement());
+      body.body.add(parse_statement());
     }
     remove_and_get_token();
+  }
+
+  private Statement parse_while_statement() throws Exception {
+    remove_and_get_token();
+    Expression condition = parse_expression();
+    if (!(condition instanceof BinaryExpression || condition instanceof BooleanLiteral)) {
+      throw new Exception("Invalid condition in while statement");
+    }
+    WhileStatement whileStatement = new WhileStatement(condition);
+    expect_token(TokenType.Colon, "Expected ':' in the while statement");
+    expect_token(TokenType.EOL, "Expected block for the while loop");
+    parse_block(whileStatement.body);
     return whileStatement;
   }
 
@@ -255,21 +288,13 @@ public class Parser {
       throw new Exception("Invalid variable declaration or initialisation");
     }
     expect_token(TokenType.Comma, "Expected ',' after variable declaration in the for statement");
-    BinaryExpression test = (BinaryExpression) parse_expression();
+    Expression test = parse_expression();
     expect_token(TokenType.Comma, "Expected ',' after condition in the for statement");
     Statement update = parse_statement();
     expect_token(TokenType.Colon, "Expected ':' in the for statement");
     expect_token(TokenType.EOL, "Expected block for the for statement");
-    expect_token(TokenType.Indentation, "Expected block for the for statement");
     ForStatement forStatement = new ForStatement(init, test, update);
-    while (cur.type != TokenType.Dedentation) {
-      if (cur.type == TokenType.EOL) {
-        remove_and_get_token();
-        continue;
-      }
-      forStatement.body.body.add(parse_statement());
-    }
-    remove_and_get_token();
+    parse_block(forStatement.body);
     return forStatement;
   }
 
@@ -291,6 +316,7 @@ public class Parser {
       case StringDeclaration:
       case DoubleDeclaration:
       case BooleanDeclaration:
+      case Null:
         functionDeclaration.set_return_type(remove_and_get_token().type);
         break;
       default:
@@ -317,7 +343,23 @@ public class Parser {
   private ReturnStatement parse_return_statement() throws Exception {
     expect_token(TokenType.ReturnStatement, "Expected return statement");
     ReturnStatement returnStatement = new ReturnStatement(parse_expression());
-    expect_token(TokenType.EOL, "Unexpected tokens after return expression");
+    expect_token(TokenType.EOL, "Unexpected tokens after return statement");
     return returnStatement;
+  }
+
+  private IfStatement parse_if_statement() throws Exception {
+    Token type = remove_and_get_token();
+    Expression test = null;
+    if (type.type == TokenType.IfStatement || type.type == TokenType.ElifStatement) {
+      test = parse_expression();
+    }
+    expect_token(TokenType.Colon, "Expected colon");
+    expect_token(TokenType.EOL, "Unexpected token after ':'");
+    IfStatement ifStatement = new IfStatement(test);
+    parse_block(ifStatement.consequent);
+    if (cur.type == TokenType.ElifStatement || cur.type == TokenType.ElseStatement) {
+      ifStatement.set_alternate(parse_if_statement());
+    }
+    return ifStatement;
   }
 }

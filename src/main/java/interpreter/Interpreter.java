@@ -1,8 +1,10 @@
 package interpreter;
 
+import Exceptions.InterruptException;
 import parser.NodeType;
 import parser.Parser;
 import parser.ast.*;
+import tokeniser.TokenType;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -52,6 +54,8 @@ public class Interpreter {
       return eval_double_binary_expression((double) left.value, (int) right.value, astNode.operator);
     } else if (left.type == ValueType.Double && right.type == ValueType.Double) {
       return eval_double_binary_expression((double) left.value, (double) right.value, astNode.operator);
+    } else if (left.type == ValueType.Boolean && right.type == ValueType.Boolean) {
+      return eval_boolean_binary_expression((boolean) left.value, (boolean) right.value, astNode.operator);
     }
     return new NullVal();
   }
@@ -120,6 +124,15 @@ public class Interpreter {
     return new DoubleVal(result);
   }
 
+  private static RuntimeValue<?> eval_boolean_binary_expression(boolean left, boolean right, String operator) throws Exception {
+    if (operator.equals("==")) {
+      return getBoolVal(left == right);
+    } else {
+      throw new Exception("Invalid operator %s on booleans");
+    }
+  }
+
+
   private static BoolVal getBoolVal(boolean val) {
     return new BoolVal(val);
   }
@@ -129,12 +142,21 @@ public class Interpreter {
   }
 
   public RuntimeValue<?> evaluate_statement(Statement astNode, Environment env) throws Exception {
+    if (astNode == null) {
+      throw new Exception("Null astNode cannot be evaluated");
+    }
     NodeType type = astNode.kind;
     switch (type) {
       case IntegerLiteral:
         return new IntVal(((IntegerLiteral) astNode).value);
       case DoubleLiteral:
         return new DoubleVal(((DoubleLiteral) astNode).value);
+      case BooleanLiteral:
+        return new BoolVal(((BooleanLiteral) astNode).value);
+      case StringLiteral:
+        return new StringVal(((StringLiteral) astNode).value);
+      case NullLiteral:
+        return new NullVal();
       case BinaryExpression:
         return evaluate_binary_expression((BinaryExpression) astNode, env);
       case ProgramStatement:
@@ -149,6 +171,8 @@ public class Interpreter {
         return evaluate_while_statement((WhileStatement) astNode, env);
       case ForStatement:
         return evaluate_for_statement((ForStatement) astNode, env);
+      case IfStatement:
+        return evaluate_if_statement((IfStatement) astNode, env);
       case FunctionDeclaration:
         return evaluate_function_declaration((FunctionDeclaration) astNode, env);
       case CallExpression:
@@ -184,40 +208,90 @@ public class Interpreter {
   }
 
   private NullVal evaluate_while_statement(WhileStatement whileStatement, Environment env) throws Exception {
-    BoolVal cond = (BoolVal) evaluate_binary_expression(whileStatement.condition, env);
+    BoolVal cond = (BoolVal) evaluate_statement(whileStatement.condition, env);
     while (cond.value) {
-      execute_block_body(whileStatement.body, env.create_child_environment());
-      cond = (BoolVal) evaluate_binary_expression(whileStatement.condition, env);
+      int cs = execute_block_body_loop(whileStatement.body, env.create_child_environment());
+      if (cs == 1) {
+        break;
+      }
+      cond = (BoolVal) evaluate_statement(whileStatement.condition, env);
     }
     return new NullVal();
   }
+
 
   private NullVal evaluate_for_statement(ForStatement forStatement, Environment env) throws Exception {
     Environment forEnv = env.create_child_environment();
     evaluate_statement(forStatement.init, forEnv);
-    BoolVal cond = (BoolVal) evaluate_binary_expression(forStatement.test, forEnv);
+    BoolVal cond = (BoolVal) evaluate_statement(forStatement.test, forEnv);
     while (cond.value) {
-      execute_block_body(forStatement.body, forEnv.create_child_environment());
+      int cs = execute_block_body_loop(forStatement.body, forEnv.create_child_environment());
+      if (cs == 1) {
+        break;
+      }
       evaluate_statement(forStatement.update, forEnv);
-      cond = (BoolVal) evaluate_binary_expression(forStatement.test, forEnv);
+      cond = (BoolVal) evaluate_statement(forStatement.test, forEnv);
     }
     return new NullVal();
   }
 
-  private void execute_block_body(BlockBody block, Environment env) throws Exception {
+  private int execute_block_body_loop(BlockBody block, Environment env) throws Exception {
     for (Statement statement : block.body) {
-      evaluate_statement(statement, env);
+      if (statement.kind == NodeType.BreakStatement) {
+        return 1;
+      } else if (statement.kind == NodeType.ContinueStatment) {
+        return 2;
+      } else if (statement.kind == NodeType.ReturnStatement) {
+        throw new InterruptException(3, "Return statement outside function", (ReturnStatement) statement);
+      }
+      try {
+        evaluate_statement(statement, env);
+      } catch (InterruptException err) {
+        if (err.interrupt_id == 1) {
+          return 1;
+        } else if (err.interrupt_id == 2) {
+          return 2;
+        } else {
+          throw err;
+        }
+      }
     }
+    return 0;
   }
 
   private ReturnStatement execute_block_return(BlockBody block, Environment env) throws Exception {
     for (Statement st : block.body) {
       if (st.kind == NodeType.ReturnStatement) {
         return (ReturnStatement) st;
+      } else if (st.kind == NodeType.BreakStatement) {
+        throw new InterruptException(1, "Break statement outside loop");
+      } else if (st.kind == NodeType.ContinueStatment) {
+        throw new InterruptException(2, "Continue statement outside loop");
       }
-      evaluate_statement(st, env);
+      try {
+        evaluate_statement(st, env);
+      } catch (InterruptException err) {
+        if (err.interrupt_id == 3) {
+          return err.return_value;
+        } else {
+          throw err;
+        }
+      }
     }
     return null;
+  }
+
+  private void execute_block_body_if(BlockBody block, Environment env) throws Exception {
+    for (Statement statement : block.body) {
+      if (statement.kind == NodeType.BreakStatement) {
+        throw new InterruptException(1, "Break statement outside loop");
+      } else if (statement.kind == NodeType.ContinueStatment) {
+        throw new InterruptException(2, "Continue statement outside loop");
+      } else if (statement.kind == NodeType.ReturnStatement) {
+        throw new InterruptException(3, "Return statement outside function", (ReturnStatement) statement);
+      }
+      evaluate_statement(statement, env);
+    }
   }
 
   private NullVal evaluate_function_declaration(FunctionDeclaration astNode, Environment env) throws Exception {
@@ -226,10 +300,15 @@ public class Interpreter {
   }
 
   private RuntimeValue<?> evaluate_call_expression(CallExpression callExpression, Environment env) throws Exception {
-    FunctionRuntime function = env.lookup_function(callExpression.caller.symbol);
     List<RuntimeValue<?>> arguments = new ArrayList<>();
     for (Expression exp : callExpression.arguments) {
       arguments.add(evaluate_statement(exp, env));
+    }
+
+    FunctionRuntime function = env.lookup_function(callExpression.caller.symbol);
+    if (function.isNative) {
+      function.execute(arguments);
+      return new NullVal();
     }
     Environment funcEnv = function.assign_arguments(arguments);
     ReturnStatement returnStatement = execute_block_return(function.body, funcEnv);
@@ -242,6 +321,19 @@ public class Interpreter {
         return returnValue;
       } else throw new Exception("Return type did not match the function");
     }
+  }
+
+  private RuntimeValue<?> evaluate_if_statement(IfStatement ifStatement, Environment env) throws Exception {
+    BoolVal test = (BoolVal) evaluate_statement(ifStatement.test, env);
+    while (!test.value && ifStatement.alternate != null && ifStatement.test != null) {
+      ifStatement = ifStatement.alternate;
+      if (ifStatement.test == null) {
+        continue;
+      }
+      test = (BoolVal) evaluate_statement(ifStatement.test, env);
+    }
+    execute_block_body_if(ifStatement.consequent, env.create_child_environment());
+    return new NullVal();
   }
 }
 

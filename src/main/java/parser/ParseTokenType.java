@@ -15,6 +15,8 @@ public class ParseTokenType {
         return ValueType.String;
       case BooleanDeclaration:
         return ValueType.Boolean;
+      case Null:
+        return ValueType.Null;
       default:
         throw new Exception("Cannot parse token type");
     }
