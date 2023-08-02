@@ -1,9 +1,14 @@
-func isTrue(boolean a) -> int:
-	if a == true:
-		print("a is true")
-		return 1
-	else:
-		print("a is false")
-		return 0
+int i = 3, j, k = 2
 
-isTrue(false)
+func fib(int n) -> int:
+	if n <= 1:
+		return n
+
+	return fib(n-1) + fib(n-2)
+
+for int i = 0, i < 10, i += 1:
+	if i == 5:
+		continue
+
+	print(i, " ", fib(i))
+

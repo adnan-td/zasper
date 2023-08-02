@@ -9,7 +9,7 @@ public class Identifier extends Expression {
   public String symbol;
   public ValueType type;
 
-  public Identifier(String symbol, TokenType tokenType) throws Exception {
+  public Identifier(String symbol, TokenType tokenType) {
     super(NodeType.Identifier);
     this.symbol = symbol;
     this.type = ParseTokenType.toRuntimeValueType(tokenType);

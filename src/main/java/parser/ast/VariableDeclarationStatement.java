@@ -11,14 +11,14 @@ public class VariableDeclarationStatement extends Statement {
   public ValueType type;
   public VariableDeclarationStatement lateralDeclaration = null;
 
-  public VariableDeclarationStatement(TokenType type, String identifier, Expression value) throws Exception {
+  public VariableDeclarationStatement(TokenType type, String identifier, Expression value) {
     super(NodeType.VariableDeclarationStatement);
     this.type = ParseTokenType.toRuntimeValueType(type);
     this.identifier = identifier;
     this.value = value;
   }
 
-  public VariableDeclarationStatement(TokenType type, String identifier) throws Exception {
+  public VariableDeclarationStatement(TokenType type, String identifier) {
     this(type, identifier, null);
   }
 }

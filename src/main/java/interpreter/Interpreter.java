@@ -177,6 +177,10 @@ public class Interpreter {
         return evaluate_function_declaration((FunctionDeclaration) astNode, env);
       case CallExpression:
         return evaluate_call_expression((CallExpression) astNode, env);
+      case ReturnStatement:
+        throw new Exception("Return statement outside function");
+      case BlockStatement:
+        throw new Exception("Unexpected block");
       default:
         throw new Exception("Support for this AST Node will be added soon");
     }
@@ -332,7 +336,9 @@ public class Interpreter {
       }
       test = (BoolVal) evaluate_statement(ifStatement.test, env);
     }
-    execute_block_body_if(ifStatement.consequent, env.create_child_environment());
+    if (ifStatement.test == null || test.value) {
+      execute_block_body_if(ifStatement.consequent, env.create_child_environment());
+    }
     return new NullVal();
   }
 }

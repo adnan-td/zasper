@@ -20,8 +20,8 @@ public class App {
       Interpreter interpreter = new Interpreter(source);
       Printer.print(interpreter.evaluate());
     } catch (Exception err) {
-      System.out.print(err.toString());
-      System.out.println();
+//      System.out.print(err.toString());
+//      System.out.println();
       err.printStackTrace();
       System.out.println();
     }

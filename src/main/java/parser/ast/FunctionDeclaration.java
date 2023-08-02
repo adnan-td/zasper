@@ -1,5 +1,6 @@
 package parser.ast;
 
+import Exceptions.ParsingException;
 import interpreter.ValueType;
 import parser.NodeType;
 import parser.ParseTokenType;
@@ -19,11 +20,11 @@ public class FunctionDeclaration extends Statement {
     this.id = id;
   }
 
-  public void add_argument(Identifier arg) throws Exception {
+  public void add_argument(Identifier arg) {
     parameters.add(arg);
   }
 
-  public void set_return_type(TokenType type) throws Exception {
+  public void set_return_type(TokenType type) {
     this.returnType = ParseTokenType.toRuntimeValueType(type);
   }
 }

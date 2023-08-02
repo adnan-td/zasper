@@ -5,7 +5,7 @@ import tokeniser.TokenType;
 
 public class ParseTokenType {
 
-  public static ValueType toRuntimeValueType(TokenType tokenType) throws Exception {
+  public static ValueType toRuntimeValueType(TokenType tokenType) {
     switch (tokenType) {
       case DoubleDeclaration:
         return ValueType.Double;
@@ -18,7 +18,8 @@ public class ParseTokenType {
       case Null:
         return ValueType.Null;
       default:
-        throw new Exception("Cannot parse token type");
+        return null;
+//        throw new Exception("Cannot parse token type");
     }
   }
 }

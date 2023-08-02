@@ -1,91 +1,108 @@
 package tokeniser;
 
+import Exceptions.ErrorTypes;
+import Exceptions.ParsingException;
+
 import java.util.ArrayList;
 import java.util.List;
 
 public class Tokeniser {
-  private static Token newToken(String value, TokenType type) {
-    return new Token(value, type);
+  private static Token newToken(String value, TokenType type, int start, int end) {
+    return new Token(value, type, start, end + 1);
   }
 
-  public static List<Token> tokenise(String source) throws Exception {
+  public static List<Token> tokenise(String source) throws ParsingException {
     ArrayList<Token> tokens = new ArrayList<>();
-    source = removeEmptyLines(source);
-//    System.out.println(source);
     String[] src = source.split("");
-    int i = 0;
+    int Index = 0;
     int curIndent = 0;
 
-    while (i < src.length) {
-      String ch = src[i];
+    while (Index < src.length) {
+      String ch = src[Index];
+      int startIndex = Index;
       switch (ch) {
         case "(":
-          tokens.add(newToken(ch, TokenType.OpenParenthesis));
+          tokens.add(newToken(ch, TokenType.OpenParenthesis, startIndex, Index));
           break;
         case ")":
-          tokens.add(newToken(ch, TokenType.CloseParenthesis));
+          tokens.add(newToken(ch, TokenType.CloseParenthesis, startIndex, Index));
           break;
         case "+":
         case "-":
         case "*":
         case "/":
         case "%":
-          if (i + 1 < src.length && src[i + 1].equals("=")) {
-            tokens.add(newToken(ch + src[i + 1], TokenType.AssignmentOperator));
-            i++;
-          } else if (ch.equals("-") && i + 1 < src.length && src[i + 1].equals(">")) {
-            tokens.add(newToken(ch + src[i + 1], TokenType.ArrowOperator));
-            i++;
+          if (Index + 1 < src.length && src[Index + 1].equals("=")) {
+            tokens.add(newToken(ch + src[Index + 1], TokenType.AssignmentOperator, startIndex, Index + 1));
+            Index++;
+          } else if (ch.equals("-") && Index + 1 < src.length && src[Index + 1].equals(">")) {
+            tokens.add(newToken(ch + src[Index + 1], TokenType.ArrowOperator, startIndex, Index + 1));
+            Index++;
           } else {
-            tokens.add(newToken(ch, TokenType.BinaryOperator));
+            tokens.add(newToken(ch, TokenType.BinaryOperator, startIndex, Index));
           }
           break;
         case ">":
         case "<":
-          if (i + 1 < src.length && src[i + 1].equals("=")) {
-            i++;
-            tokens.add(newToken(ch + src[i], TokenType.BinaryOperator));
+          if (Index + 1 < src.length && src[Index + 1].equals("=")) {
+            Index++;
+            tokens.add(newToken(ch + src[Index], TokenType.BinaryOperator, startIndex, Index));
           } else {
-            tokens.add(newToken(ch, TokenType.BinaryOperator));
+            tokens.add(newToken(ch, TokenType.BinaryOperator, startIndex, Index));
           }
           break;
         case "=":
-          if (i + 1 < src.length && src[i + 1].equals("=")) {
-            i++;
-            tokens.add(newToken(ch + src[i], TokenType.BinaryOperator));
+          if (Index + 1 < src.length && src[Index + 1].equals("=")) {
+            Index++;
+            tokens.add(newToken(ch + src[Index], TokenType.BinaryOperator, startIndex, Index));
           } else {
-            tokens.add(newToken(ch, TokenType.Equals));
+            tokens.add(newToken(ch, TokenType.Equals, startIndex, Index));
           }
           break;
         case ",":
-          tokens.add(newToken(ch, TokenType.Comma));
+          tokens.add(newToken(ch, TokenType.Comma, startIndex, Index));
           break;
         case ":":
-          tokens.add(newToken(ch, TokenType.Colon));
+          tokens.add(newToken(ch, TokenType.Colon, startIndex, Index));
           break;
         case "\"":
           StringBuilder str = new StringBuilder();
-          while (i + 1 < src.length && !src[i + 1].equals("\"")) {
-            str.append(src[i + 1]);
-            i++;
+          while (Index + 1 < src.length && !src[Index + 1].equals("\"")) {
+            str.append(src[Index + 1]);
+            Index++;
           }
-          tokens.add(newToken(str.toString(), TokenType.String));
-          i++;
+          if (Index == src.length)
+            throw new ParsingException(ErrorTypes.StringNotClosed, new Location(startIndex, Index), source);
+          Index++;
+          tokens.add(newToken(str.toString(), TokenType.String, startIndex, Index));
           break;
         case "\t":
           int newIndent = 1;
-          while (i + 1 < src.length && src[i + 1].equals("\t")) {
-            i++;
+          while (Index + 1 < src.length && src[Index + 1].equals("\t")) {
+            Index++;
             newIndent++;
           }
+          // checking previous dedentations
+          int t = tokens.size() - 1;
+          for (int k = 0; k < newIndent - curIndent; k++) {
+            while (tokens.get(t).type == TokenType.EOL) {
+              t--;
+            }
+            if (tokens.get(t).type == TokenType.Dedentation) {
+              tokens.remove(t);
+              curIndent++;
+            } else {
+              break;
+            }
+          }
           if (Math.abs(newIndent - curIndent) > 1 && newIndent > curIndent) {
-            throw new Exception("Improper Indentation");
+            throw new ParsingException(ErrorTypes.ImproperIndentation, new Location(startIndex, Index), source);
           } else {
             if (newIndent > curIndent) {
-              tokens.add(newToken("/t", TokenType.Indentation));
+              tokens.add(newToken("/t", TokenType.Indentation, startIndex, Index));
             } else if (newIndent < curIndent) {
               while (curIndent != newIndent) {
-                tokens.add(newToken("/t", TokenType.Dedentation));
+                tokens.add(newToken("/t", TokenType.Dedentation, startIndex, Index));
                 curIndent--;
               }
             }
@@ -95,63 +112,63 @@ public class Tokeniser {
         default:
           if (isNumeric(ch)) {
             StringBuilder num = new StringBuilder(ch);
-            i++;
-            while (i < src.length && isNumeric(src[i])) {
-              num.append(src[i]);
-              i++;
+            Index++;
+            while (Index < src.length && isNumeric(src[Index])) {
+              num.append(src[Index]);
+              Index++;
             }
-            if (i < src.length && src[i].equals(".")) {
-              num.append(src[i]);
-              i++;
-              while (i < src.length && isNumeric(src[i])) {
-                num.append(src[i]);
-                i++;
+            if (Index < src.length && src[Index].equals(".")) {
+              num.append(src[Index]);
+              Index++;
+              while (Index < src.length && isNumeric(src[Index])) {
+                num.append(src[Index]);
+                Index++;
               }
-              tokens.add(newToken(num.toString(), TokenType.Double));
+              tokens.add(newToken(num.toString(), TokenType.Double, startIndex, Index - 1));
             } else {
-              tokens.add(newToken(num.toString(), TokenType.Integer));
+              tokens.add(newToken(num.toString(), TokenType.Integer, startIndex, Index - 1));
             }
             continue;
           } else if (isAlphabetic(ch)) {
             StringBuilder identifier = new StringBuilder(ch);
-            i++;
-            while (i < src.length && isAlphabetic(src[i])) {
-              identifier.append(src[i]);
-              i++;
+            Index++;
+            while (Index < src.length && isAlphabetic(src[Index])) {
+              identifier.append(src[Index]);
+              Index++;
             }
             if (ReservedKeywords.contains(identifier.toString())) {
-              tokens.add(newToken(identifier.toString(), ReservedKeywords.get(identifier.toString())));
+              tokens.add(newToken(identifier.toString(), ReservedKeywords.get(identifier.toString()), startIndex, Index - 1));
             } else {
-              tokens.add(newToken(identifier.toString(), TokenType.Identifier));
+              tokens.add(newToken(identifier.toString(), TokenType.Identifier, startIndex, Index - 1));
             }
             continue;
           } else if (isSkippable(ch)) {
             if (ch.equals("\n")) {
-              tokens.add(newToken("EndOfLine", TokenType.EOL));
+              tokens.add(newToken("EndOfLine", TokenType.EOL, startIndex, Index));
               // if the next line has no indentations
-              if ((i + 1 < src.length && !src[i + 1].equals("\t"))) {
+              if ((Index + 1 < src.length && !src[Index + 1].equals("\t"))) {
                 while (curIndent > 0) {
-                  tokens.add(newToken("/t", TokenType.Dedentation));
+                  tokens.add(newToken("/t", TokenType.Dedentation, startIndex, Index));
                   curIndent--;
                 }
               }
             }
             // Do nothing for skippable characters
           } else {
-            throw new Exception("Unrecognized character found: " + ch);
+            throw new ParsingException(ErrorTypes.UnrecognizedCharacter, "Unrecognized character found: " + ch, new Location(startIndex, Index), source);
           }
           break;
       }
-      i++;
+      Index++;
     }
-    if ((i + 1 >= src.length)) {
+    if ((Index + 1 >= src.length)) {
       while (curIndent > 0) {
-        tokens.add(newToken("/t", TokenType.Dedentation));
+        tokens.add(newToken("/t", TokenType.Dedentation, Index, Index));
         curIndent--;
       }
     }
-    tokens.add(newToken("EndOfLine", TokenType.EOL));
-    tokens.add(newToken("EndOfFile", TokenType.EOF));
+    tokens.add(newToken("EndOfLine", TokenType.EOL, Index, Index));
+    tokens.add(newToken("EndOfFile", TokenType.EOF, Index, Index));
     return tokens;
   }
 
